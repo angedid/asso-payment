@@ -63,7 +63,6 @@ class ApiController extends Controller
             $holderData = [
                 'id' => $adminuser['id'],
                 'tenant_id' => $adminuser['tenant_id'],
-                'type' => $adminuser['type'],
                 'full_name' => $adminuser['full_name'],
                 'username' => $adminuser['username'],
                 'email' => $adminuser['email'],
@@ -73,6 +72,7 @@ class ApiController extends Controller
                 'country' => $adminuser['country'],
                 'active' => $adminuser['active'],
                 'network' => $adminuser['network'],
+                'type' => $adminuser['type'],
             ];
             //return response(GlobalResultHandler::buildSuccesResponseArray($userData), 200);
             Holder::create($holderData);

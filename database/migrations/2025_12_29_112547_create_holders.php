@@ -21,7 +21,10 @@ return new class extends Migration
             $table->string('email')->nullable();
             $table->json('phone_numbers')->nullable();
             $table->boolean('active')->nullable();
+            $table->enum('type',['MERCHANT_ADMINISTRATOR', 'MERCHANT_USER', 'SELLER_USER'])->nullable(false)->default('MERCHANT_USER');
+            //$table->enum('type', ['MERCHANT_USER', 'SELLER_USER'])->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
