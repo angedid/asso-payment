@@ -1,59 +1,179 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Smart Trade Platform — Payment Module
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+The **Payment Module** is a PHP/Laravel application intended to support payment processing within **Smart Trade Platform (STP)**. It contains payment records, tenant and account models, an initial MTN Cameroon mobile-money integration, and RabbitMQ messaging components for communication with other STP services.
 
-## About Laravel
+**Project lead:** NKALLA EHAWE Didier Junior
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+**Status:** prototype under development. Payment processing, service integration and security controls require further verification and remediation before production use.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Why this project exists
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+STP aims to help wholesalers and vendors manage goods supplied on credit, repayments and returns. The broader vision includes building a trading history that participants may use when engaging with financial institutions. Lending decisions remain with those institutions.
 
-## Learning Laravel
+This repository focuses on the payment component of that vision. It is intended to work alongside the [STP identity and access management service](https://github.com/angedid/asso-iam) and the [Angular web client](https://github.com/angedid/angular-client). It does not implement the entire STP product.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Current scope and status
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+| Area | Code currently present | Status of this review |
+| --- | --- | --- |
+| Payment requests | A payment endpoint validates selected fields, creates a payment record and contains MTN Cameroon mobile-money request logic. | Present in source; not verified end to end. |
+| Payment status | The model defines `PENDING`, `ACCEPTED`, `SUCCESS` and `FAILED`. | Status transitions and final settlement require further review. |
+| Tenant and holder data | Models, migrations and a tenant-provisioning endpoint are present. | Integration with IAM and tenant isolation are not verified. |
+| IAM events | Endpoints and RabbitMQ listener scripts handle tenant provisioning, access-token information and logout-related messages. | Message delivery and authorization have not been verified end to end. |
+| Payment events | Jobs publish payment-initiated and payment-completed messages; the completed event includes a signature. | Signing, delivery and verification require further review. |
+| Other payment methods | Models or branches mention mobile accounts, credit cards, e-wallets, Orange Cameroon and LOFOMBO. | These declarations do not establish that the methods are implemented or operational. |
 
-## Laravel Sponsors
+No real payment, reconciliation, bank transfer or mobile-money settlement was performed during this review. The code currently includes specific security and correctness issues described below; do not use it for real transactions in its present state.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Technology stack
 
-### Premium Partners
+| Component | Repository configuration |
+| --- | --- |
+| Runtime | PHP `^8.2`, subject to installed dependency and extension requirements |
+| Framework | Laravel `^12.0` |
+| Authentication dependencies | Laravel Passport `^13.4` and Sanctum `^4.0`; route behavior differs by middleware |
+| Data access | Eloquent models and Laravel migrations |
+| Messaging | `php-amqplib/php-amqplib` and Laravel queued jobs |
+| Cryptography | `spatie/crypto` for event signing |
+| Frontend assets | Vite and Tailwind CSS, as declared in `package.json` |
+| Tests | PHPUnit `^11.5.3` and Laravel's test runner |
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+`composer.lock` is present. The reviewed commit does **not** contain a `package-lock.json`; JavaScript dependencies are therefore not pinned by an npm lockfile in this version.
+
+## Prerequisites
+
+- A compatible PHP version, Composer and the PHP extensions required by Laravel and the locked Composer packages, including a PDO driver for the chosen database.
+- A dedicated development database supported by the configured Laravel connection.
+- Node.js and npm compatible with the versions specified in `package.json` if building the web assets.
+- An isolated RabbitMQ instance and an appropriately configured queue backend when testing messaging.
+- A **sandbox** configuration for MTN mobile money only when deliberately testing the provider integration; never use real payment credentials or payment data for basic setup.
+- A configured IAM service or test doubles when testing service-to-service integration.
+
+The default `.env.example` does not list every payment or messaging setting used by the application. Inspect the code and supply required development-only values through an appropriate secrets-management mechanism.
+
+## Local setup
+
+The following is a starting procedure for a clean development environment. It was **not executed during the repository review**. Validate migrations and integrations in an isolated environment before relying on it.
+
+```bash
+git clone https://github.com/angedid/asso-payment.git
+cd asso-payment
+composer install
+cp .env.example .env
+php artisan key:generate
+```
+
+Edit `.env` for the development application and database. Create an empty development database, then run:
+
+```bash
+php artisan migrate
+```
+
+The repository contains payment, tenant, holder, currency, provider, access-token and Passport-related migrations. Their compatibility with a particular database has not been tested here. The default `DatabaseSeeder` creates a generic Laravel user and does not establish the complete tenant, holder, provider and currency data needed for a payment request.
+
+If the web assets are needed, install the npm dependencies and build them:
+
+```bash
+npm install
+npm run build
+```
+
+Since no npm lockfile is included, the precise dependency versions may vary. Review the generated lockfile and dependency changes if you decide to introduce one.
+
+Start a local development server on a port that does not conflict with IAM or Angular:
+
+```bash
+php artisan serve --host=127.0.0.1 --port=9002
+```
+
+Set `APP_URL` and the local messaging configuration consistently with your chosen host and port. `9002` is an example, not a repository-enforced port. The registered health route is `/up`.
+
+## IAM and authentication integration
+
+`routes/api.php` declares three integration endpoints using the `rabbitmq.client` middleware alias. In `bootstrap/app.php`, this alias points to Passport's `CheckToken` middleware. Listener scripts obtain service credentials and call the payment service. The API also contains `/api/user` with `auth:sanctum`, while `/api/payments` uses the custom `iam.auth.api` alias mapped to `ControlAccess`.
+
+Do not assume Passport, Sanctum and the custom middleware provide equivalent authorization guarantees. Configure service clients and keys only after reviewing the installed Passport version and the intended architecture. Run `php artisan route:list` in a configured environment to verify the routes and middleware actually registered.
+
+**Important:** the current `ControlAccess` implementation decodes token payload data and looks up a token identifier, but the reviewed code does not visibly verify the token signature and falls through to the next handler when no token or matching record is found. It must not be treated as a sufficient authorization boundary. Review authentication, signature validation, tenant ownership and permissions before any deployment.
+
+## API overview
+
+These declarations are in `routes/api.php`; Laravel applies the `/api` prefix. The table describes source code at the reviewed revision and does not claim endpoint behavior has been tested.
+
+| Method | Path | Purpose in the code | Route middleware |
+| --- | --- | --- | --- |
+| `GET` | `/api/test` | Return a simple test response | None declared |
+| `GET` | `/api/user` | Return the authenticated user | `auth:sanctum` |
+| `POST` | `/api/tenant-provisions` | Create local tenant and holder records from an incoming message | `rabbitmq.client` |
+| `POST` | `/api/access-tokens` | Record access-token information from an incoming message | `rabbitmq.client` |
+| `POST` | `/api/logout` | Mark a local token record as revoked using its identifier | `rabbitmq.client` |
+| `POST` | `/api/payments` | Validate payment data and invoke the selected payment path | `iam.auth.api` |
+
+The payment endpoint expects fields including `user_id`, `payment_service_provider_id`, `tenant_id`, `amount`, `currency_id` and `order_id`. The mobile-money branch also validates phone-number input. Refer to `ApiController::makeServicePayment` and the database schema for the current contract; do not send real payment data during development.
+
+Several controller responses use HTTP `200` even for application-level failures, with fields such as `success`, `faillure`, `raison` or `response`. A `200` response alone is therefore not sufficient to infer payment success or final settlement. Verify both the response contract and provider status before building a client integration.
+
+## Payment processing and messaging
+
+The MTN Cameroon branch reads provider configuration from `MOMO_PAYMENT_ACCOUNT_DATA`, requests a provider access token, creates a local payment record, sends a request to pay, and performs a subsequent provider status request. It dispatches events using settings including `LICENSE_PAYMENT_INITIATED_EXCHANGE`, `LICENSE_PAYMENT_COMPLETED_EXCHANGE` and `RABBIT_MQ_EXCHANGE_TYPE`. `MTN_USSD_PAYMENT_CODE` is used in an informational message.
+
+Review the current code before configuring this integration:
+
+- The outgoing MTN request currently hard-codes the currency as `EUR`, even though a `currency_id` is received and looked up. Supported currencies and provider configuration must be validated before testing.
+- An accepted request is not necessarily a completed payment. The current status-check path can mark a payment `SUCCESS` on an HTTP `200` response without visibly checking the provider's returned payment status. Settlement, retries, asynchronous updates and idempotency require review and tests.
+- The completed-event signing code reads `payment-private.pem` and `payment-public.pem` via relative paths. Resolve the working-directory dependency and store private keys outside the public directory and source control.
+
+The messaging listeners are under `app/Infrastructure/Messaging/`; the publisher is `app/Jobs/ProcessMessages.php`. They read `global-var-config.ini` using relative paths. Required host, broker, exchange, queue and client settings depend on the process working directory and are not fully represented in `.env.example`. Review and configure them without copying real secrets into the repository. Run a queue worker such as `php artisan queue:work` only after configuring its backend and the necessary integrations.
+
+## Tests and checks
+
+```bash
+php artisan route:list
+php artisan test
+```
+
+`composer test` is also defined; it clears the Laravel configuration cache and runs the test suite. `phpunit.xml` selects an in-memory SQLite database and array-based test services. The existing unit and feature tests are Laravel starter examples; they do not prove payment correctness, provider integration, token validation, tenant isolation, event signing or idempotency.
+
+**Review status:** source files and route declarations were inspected at commit `7ca5228e42195bcdf426159a7577914aa862687e` on `main`. PHP and Composer were unavailable in the review environment. Installation, migrations, route listing, tests, RabbitMQ integration and payment-provider calls were not run. No payment functionality is claimed to have been validated end to end.
+
+## Repository structure
+
+| Path | Purpose |
+| --- | --- |
+| `routes/api.php`, `routes/web.php` | API and web route declarations |
+| `app/Http/Controllers/ApiController.php` | Tenant provisioning, token records, logout and payment handling |
+| `app/Http/Middleware/ControlAccess.php` | Custom payment-route token check |
+| `app/Domain/Model/` | Payment, tenant, holder, account, provider and token models |
+| `app/Jobs/` | Queued message-publishing job |
+| `app/Infrastructure/Messaging/` | RabbitMQ listener scripts and integration configuration |
+| `app/Models/` | Laravel user, country and currency models |
+| `config/` | Application, database, queue and authentication configuration |
+| `database/migrations/`, `database/seeders/` | Database schema and starter seeder |
+| `resources/` | Blade view and frontend assets |
+| `tests/` | Laravel/PHPUnit starter tests |
+
+## Security and development limitations
+
+The following are concrete findings from the reviewed source and should be addressed before deploying or handling real transactions:
+
+- **Private key in the public repository:** `public/payment-private.pem` is tracked inside the web-served directory. Treat it as exposed. Remove private keys from public paths and repository history through an appropriate remediation process; rotate any key that was actually used. The tracked `token.json` and `global-var-config.ini` files also require confidential review for sensitive values, without copying them into tickets or documentation.
+- **Authentication weaknesses:** `ControlAccess` logs bearer tokens, does not visibly verify token signatures, and allows some missing or unknown tokens to reach the next handler. Fix and test authentication and authorization, including tenant isolation.
+- **Sensitive logging:** the payment controller logs provider tokens, authorization headers and request bodies. Remove sensitive values from logs and review previously generated logs.
+- **Payment status and currency:** validate currency selection, provider response content, final settlement, retries and duplicate-request handling. Do not equate an HTTP success response with a settled transaction.
+- **Test coverage:** add focused automated tests for rejected and forged tokens, cross-tenant access, payment validation, provider failures and status transitions, signing and message handling.
+
+These points describe code and files observed in the repository; they are not a completed security audit.
 
 ## Contributing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Describe the user need, scope and verification procedure for each change. Use synthetic fixtures, sandbox providers and isolated messaging services. Add meaningful tests for payment status, security and failure handling. Report which checks were run and which integrations could not be exercised.
 
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Do not commit real user information, payment-card data, passwords, access tokens, private keys or provider credentials. Third-party libraries and assets retain their own license terms.
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+`composer.json` declares `MIT`, but no root `LICENSE` file was present in the reviewed repository. Confirm the rights in the project code and add the intended license text before presenting the repository as licensed. Third-party dependencies and assets remain subject to their own licenses.
+
+## Product background
+
+The STP vision is based on “Smart Trade Platform — Executive Summary,” version 1.0, August 2026, by Didier Junior NKALLA EHAWE. The business capabilities described there are product goals; the module's current code and verification status are stated above.
