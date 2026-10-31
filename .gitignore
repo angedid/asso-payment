@@ -19,6 +19,9 @@
 /storage/*.key
 /storage/pail
 /vendor
+/payment-private.pem
+/payment-public.pem
+/global-var-config.ini
 Homestead.json
 Homestead.yaml
 Thumbs.db

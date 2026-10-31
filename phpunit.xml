@@ -19,17 +19,26 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <env name="APP_KEY" value="base64:xfTgirjiX0R1iruLkfDVE9/pzq2D16dgpi7fGw344/w="/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
-        <env name="DB_CONNECTION" value="sqlite"/>
-        <env name="DB_DATABASE" value=":memory:"/>
+        <env name="DB_CONNECTION" value="pgsql"/>
+        <env name="DB_HOST" value="127.0.0.1"/>
+        <env name="DB_PORT" value="5432"/>
+        <env name="DB_DATABASE" value="asso-payment_testing"/>
+        <env name="DB_USERNAME" value="postgres"/>
+        <env name="DB_PASSWORD" value="Ange2310!!"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <env name="MTN_USSD_PAYMENT_CODE" value="*126#"/>
+        <env name="MOMO_PAYMENT_ACCOUNT_DATA" value="{&quot;name&quot;:&quot;Collection&quot;, &quot;account&quot;:{&quot;username&quot;:&quot;didnkallaehawe@gmail.com&quot;, &quot;password&quot;:&quot;Ange1308!!&quot;}, &quot;registration_key&quot;:{&quot;primary&quot;:&quot;1c45a428690141c59797b1037723735c&quot;, &quot;secondary&quot;:&quot;ac5194e50a2b4e5ca0cf9174a1899f83&quot;}, &quot;X-Reference-Id&quot;:&quot;3ffba5c8-accd-45f1-9122-f9d6444ac64b&quot;, &quot;providerCallbackHost&quot;:&quot;http://small-change-wallet.diacoopweb.com/mtn-momo-response&quot;, &quot;targetEnvironment&quot;:&quot;sandbox&quot;, &quot;apiKey&quot;:&quot;fc3388dc0d7340539398780833e3cc59&quot;, &quot;base64_encoded_basic_oauth&quot;:&quot;NGU4NmM3MjMtNTVjNC00NmFmLWI4YWYtODE5NTZmNGZjMjExOmQzOWQzNjZmMWY5YzRjYjI5NzJmYWU2M2Y1ZThiZjRk&quot;, &quot;token_endpoint&quot;:&quot;https://sandbox.momodeveloper.mtn.com/collection/token/&quot;, &quot;resource_endpoints&quot;:{&quot;base_url&quot;:&quot;https://sandbox.momodeveloper.mtn.com/collection/v1_0/&quot;, &quot;payment_path&quot;:&quot;requesttopay&quot;, &quot;status_path&quot;:&quot;requesttopay&quot;}}"/>
+        <env name="LICENSE_PAYMENT_INITIATED_EXCHANGE" value="LICENSE_PAYMENT_INITIATED_EXCHANGE"/>
+        <env name="LICENSE_PAYMENT_COMPLETED_EXCHANGE" value="LICENSE_PAYMENT_COMPLETED_EXCHANGE"/>
     </php>
 </phpunit>

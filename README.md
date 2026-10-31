@@ -127,14 +127,71 @@ The messaging listeners are under `app/Infrastructure/Messaging/`; the publisher
 
 ## Tests and checks
 
+The test suite covers the primary business logic, domain models, authentication/middleware layers, and payment use cases.
+
+### Running Automated Tests
+
+Execute the test suite using either of the following documented commands:
+
 ```bash
-php artisan route:list
+# Recommended: clears Laravel configuration cache and runs all tests
+composer test
+
+# Or run directly via Artisan
 php artisan test
 ```
 
-`composer test` is also defined; it clears the Laravel configuration cache and runs the test suite. `phpunit.xml` selects an in-memory SQLite database and array-based test services. The existing unit and feature tests are Laravel starter examples; they do not prove payment correctness, provider integration, token validation, tenant isolation, event signing or idempotency.
+To run a specific test suite or test class:
 
-**Review status:** source files and route declarations were inspected at commit `7ca5228e42195bcdf426159a7577914aa862687e` on `main`. PHP and Composer were unavailable in the review environment. Installation, migrations, route listing, tests, RabbitMQ integration and payment-provider calls were not run. No payment functionality is claimed to have been validated end to end.
+```bash
+# Run unit tests only
+php artisan test --testsuite=Unit
+
+# Run feature tests only
+php artisan test --testsuite=Feature
+
+# Run a specific test file
+php artisan test tests/Feature/PaymentTest.php
+```
+
+### Test Suite Coverage
+
+- **Domain Models & Constraints (`tests/Unit/DomainModelTest.php`):** Validates creation, status transitions, JSON casting, and constraints for `Payment`, `PaymentServiceProvider`, `Tenant`, `Holder`, `AccessToken`, `MobileAccount`, `CreditCard`, `EWallet`, `Currency`, and `Country`.
+- **Middleware & Token Validation (`tests/Unit/ControlAccessMiddlewareTest.php`, `tests/Feature/AuthAndMiddlewareTest.php`):** Validates access token expiration checks, revocation status, missing/unauthenticated bearer token handling, and Passport `rabbitmq.client` route protection.
+- **Tenant Provisioning (`tests/Feature/TenantProvisionTest.php`):** Tests transactional creation of tenant and admin holder records as well as rollback behavior on malformed input.
+- **Access Token Management & Revocation (`tests/Feature/AccessTokenManagementTest.php`):** Validates decoding and persistence of token metadata (`/api/access-tokens`) and token revocation upon logout (`/api/logout`).
+- **Payment Processing & Use Cases (`tests/Feature/PaymentTest.php`):**
+  - Validation rules for required payment fields, UUID formats, and foreign keys.
+  - Mobile Money phone number validation against configured countries.
+  - Idempotency / duplicate payment prevention for already settled orders (`Order Yey Paid`).
+  - MTN Cameroon payment flow with provider response handling (HTTP 202 Accepted, HTTP 200 Success with RSA event signing, HTTP 4xx/5xx failures, and network exception resilience).
+  - Credit Card and Lofombo payment method validation handling.
+- **Background Jobs & Event Messaging (`tests/Unit/ProcessMessagesTest.php`):** Validates `ProcessMessages` job construction, queue serialization, and event dispatch parameters.
+- **Result Formatting (`tests/Unit/GlobalResultHandlerTest.php`):** Tests success and failure response payload builders.
+
+## Continuous Integration and Docker
+
+### Continuous Integration (GitHub Actions)
+
+A GitHub Actions CI workflow is configured under `.github/workflows/ci.yml`. It runs automatically on pushes and pull requests to `main`:
+
+1. **Automated Test Job:** Spins up a PostgreSQL 16 container, provisions required extensions (PHP 8.4 with `pdo_pgsql`, `sockets`, `intl`, etc.), installs locked Composer dependencies, runs database migrations, and executes `composer test`.
+2. **Docker Build Job:** Validates that the application `Dockerfile` builds cleanly.
+
+### Docker Support
+
+A production-ready `Dockerfile` (PHP 8.4 CLI) and a multi-container `docker-compose.yml` are included for local development and containerized testing:
+
+```bash
+# Build the Docker image
+docker build -t asso-payment:latest .
+
+# Run the full stack (Application, PostgreSQL, RabbitMQ)
+docker compose up -d
+
+# Run automated tests inside the Docker container
+docker compose run --rm app composer test
+```
 
 ## Repository structure
 
@@ -150,7 +207,9 @@ php artisan test
 | `config/` | Application, database, queue and authentication configuration |
 | `database/migrations/`, `database/seeders/` | Database schema and starter seeder |
 | `resources/` | Blade view and frontend assets |
-| `tests/` | Laravel/PHPUnit starter tests |
+| `tests/Unit/`, `tests/Feature/` | Comprehensive test suite (Models, Auth/Middleware, Payment, Tenant, Tokens, Jobs) |
+| `.github/workflows/ci.yml` | GitHub Actions CI workflow (PostgreSQL, testing, Docker build) |
+| `Dockerfile`, `docker-compose.yml` | Containerized runtime, testing, and multi-service orchestration |
 
 ## Security and development limitations
 

@@ -1,0 +1,12 @@
+.git
+.github
+vendor
+node_modules
+storage/logs/*
+!storage/logs/.gitignore
+bootstrap/cache/*.php
+!bootstrap/cache/.gitignore
+.env
+.env.backup
+.phpunit.result.cache
+npm-debug.log

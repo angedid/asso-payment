@@ -1,0 +1,61 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: asso_payment_app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: asso-payment
+      DB_USERNAME: postgres
+      DB_PASSWORD: password
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
+
+  db:
+    image: postgres:16-alpine
+    container_name: asso_payment_db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: asso-payment
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d asso-payment"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: asso_payment_rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+volumes:
+  pgdata:
+  rabbitmq_data:
